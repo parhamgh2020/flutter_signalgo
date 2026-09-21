@@ -47,7 +47,6 @@ class AppwriteCollections {
   AppwriteCollections._();
 
   static const symbols = 'symbols';
-  static const candles = 'candles';
   static const analyses = 'analyses';
   static const news = 'news';
   static const watchlist = 'watchlist';

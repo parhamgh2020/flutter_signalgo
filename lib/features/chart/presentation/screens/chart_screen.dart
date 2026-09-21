@@ -6,6 +6,7 @@ import '../../../../core/providers/navigation_providers.dart';
 import '../../../../core/widgets/empty_state.dart';
 import '../../../../core/widgets/skeleton.dart';
 import '../../../../l10n/generated/app_localizations.dart';
+import '../../../symbols/presentation/providers/symbols_providers.dart';
 import '../../domain/entities/timeframe.dart';
 import '../../domain/logic/moving_average.dart';
 import '../providers/chart_providers.dart';
@@ -26,6 +27,20 @@ class ChartScreen extends ConsumerWidget {
     final showRSI = ref.watch(showRSIProvider);
     final showMACD = ref.watch(showMACDProvider);
 
+    // The chart/candles Appwrite collections are keyed by ticker (e.g.
+    // `BTCUSDT_1d`), not by the `symbols` collection's document id that
+    // selectedSymbolProvider (and the watchlist) use — resolve it here.
+    final symbolsItems = ref.watch(symbolsListControllerProvider).valueOrNull;
+    String? selectedTicker;
+    if (symbolsItems != null && selectedSymbol != null) {
+      for (final item in symbolsItems) {
+        if (item.id == selectedSymbol) {
+          selectedTicker = item.symbol;
+          break;
+        }
+      }
+    }
+
     return Scaffold(
       appBar: AppBar(title: Text(l10n.chartTitle)),
       body: SafeArea(
@@ -39,13 +54,13 @@ class ChartScreen extends ConsumerWidget {
                 onChanged: (id) => ref.read(selectedSymbolProvider.notifier).state = id,
               ),
               const SizedBox(height: 8),
-              if (selectedSymbol == null)
+              if (selectedTicker == null)
                 Expanded(
                   child: EmptyState(icon: Icons.candlestick_chart_outlined, title: l10n.chooseCoinFirst),
                 )
               else
                 Expanded(
-                  child: _ChartBody(symbolId: selectedSymbol, timeframe: timeframe),
+                  child: _ChartBody(symbolId: selectedTicker, timeframe: timeframe),
                 ),
               const SizedBox(height: 8),
               Row(

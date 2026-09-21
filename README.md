@@ -102,18 +102,21 @@ on `name` (required for `Query.search('name', …)`).
 Permissions: read — `any`; write — restricted to a server/API-key integration that
 syncs price data (the app never writes to this collection).
 
-### `candles`
+### Candles — one collection per symbol/timeframe
+
+Candles are **not** stored in a single shared collection. Each ticker/timeframe pair
+gets its own collection, named `{TICKER}USDT_{timeframe}` (ticker from `symbols.symbol`,
+uppercased, always quoted in USDT) — e.g. `BTCUSDT_1d`, `BTCUSDT_4h`, `BTCUSDT_1w`.
+Create one such collection per symbol you support, per timeframe you serve.
 
 | Attribute | Type | Notes |
 |---|---|---|
-| `symbol` | string, required | |
-| `timeframe` | string, required | one of `1h`, `4h`, `1d`, `1w` |
 | `open`, `high`, `low`, `close` | double, required | |
 | `volume` | double, required | |
 | `timestamp` | datetime, required | |
 
-Indexes: composite key index on (`symbol`, `timeframe`, `timestamp`) — required for
-the app's `Query.equal` + `Query.orderDesc('timestamp')` pagination.
+Indexes: key index on `timestamp` — required for `Query.orderDesc('timestamp')`
+pagination (`lib/features/chart/data/repositories/chart_repository_appwrite.dart`).
 
 Permissions: read — `any`; write — server-side only.
 

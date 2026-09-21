@@ -25,6 +25,13 @@ class ChartRepositoryAppwrite implements ChartRepository {
   final Realtime _realtime;
   final AppwriteConfig _config;
 
+  /// Candles live in one collection per symbol/timeframe pair (e.g.
+  /// `BTCUSDT_1d`), not a shared `candles` collection — [symbol] is the
+  /// short ticker from the `symbols` collection (e.g. `BTC`); every pair is
+  /// quoted in USDT.
+  String _candlesCollectionId(String symbol, Timeframe timeframe) =>
+      '${symbol.toUpperCase()}USDT_${timeframe.apiValue}';
+
   @override
   Future<Result<List<CandleEntity>>> fetchCandles({
     required String symbol,
@@ -34,10 +41,8 @@ class ChartRepositoryAppwrite implements ChartRepository {
     try {
       final res = await _databases.listDocuments(
         databaseId: _config.databaseId,
-        collectionId: AppwriteCollections.candles,
+        collectionId: _candlesCollectionId(symbol, timeframe),
         queries: [
-          Query.equal('symbol', symbol),
-          Query.equal('timeframe', timeframe.apiValue),
           Query.orderDesc('timestamp'),
           Query.limit(limit),
         ],
@@ -78,7 +83,8 @@ class ChartRepositoryAppwrite implements ChartRepository {
 
   @override
   Stream<CandleEntity> watchLiveCandle({required String symbol, required Timeframe timeframe}) {
-    final channel = 'databases.${_config.databaseId}.collections.${AppwriteCollections.candles}.documents';
+    final collectionId = _candlesCollectionId(symbol, timeframe);
+    final channel = 'databases.${_config.databaseId}.collections.$collectionId.documents';
     late StreamController<CandleEntity> controller;
     RealtimeSubscription? subscription;
 
@@ -86,10 +92,8 @@ class ChartRepositoryAppwrite implements ChartRepository {
       onListen: () {
         subscription = _realtime.subscribe([channel]);
         subscription!.stream.listen((RealtimeMessage message) {
-          final payload = message.payload;
-          if (payload['symbol'] != symbol || payload['timeframe'] != timeframe.apiValue) return;
           try {
-            controller.add(CandleModel.fromMap(payload));
+            controller.add(CandleModel.fromMap(message.payload));
           } catch (_) {}
         });
       },
