@@ -14,11 +14,11 @@ class AppwriteConfig {
     return const AppwriteConfig(
       endpoint: String.fromEnvironment(
         'APPWRITE_ENDPOINT',
-        defaultValue: 'https://localhost/v1',
+        defaultValue: 'http://app.abrahamgroup.ir/v1',
       ),
       projectId: String.fromEnvironment(
         'APPWRITE_PROJECT_ID',
-        defaultValue: 'signalgo-dev',
+        defaultValue: '6aa52714003b1dc464c1',
       ),
       databaseId: String.fromEnvironment(
         'APPWRITE_DATABASE_ID',
@@ -26,7 +26,7 @@ class AppwriteConfig {
       ),
       selfSigned: bool.fromEnvironment(
         'APPWRITE_SELF_SIGNED',
-        defaultValue: false,
+        defaultValue: true,
       ),
     );
   }

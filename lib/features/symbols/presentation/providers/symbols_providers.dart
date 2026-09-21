@@ -5,16 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/appwrite/appwrite_client.dart';
 import '../../../../core/cache/offline_cache.dart';
 import '../../../../core/providers/hive_provider.dart';
-import '../../../../core/providers/repo_mode_provider.dart';
 import '../../domain/entities/symbol_entity.dart';
 import '../../domain/repositories/symbols_repository.dart';
 import '../../data/repositories/symbols_repository_appwrite.dart';
-import '../../data/repositories/symbols_repository_mock.dart';
 
 final symbolsRepositoryProvider = Provider<SymbolsRepository>((ref) {
-  if (ref.watch(useMockBackendProvider)) {
-    return SymbolsRepositoryMock();
-  }
   return SymbolsRepositoryAppwrite(
     databases: ref.watch(appwriteDatabasesProvider),
     realtime: ref.watch(appwriteRealtimeProvider),
