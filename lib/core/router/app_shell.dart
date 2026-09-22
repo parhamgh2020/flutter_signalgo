@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../features/chart/presentation/screens/chart_screen.dart';
-import '../../features/news/presentation/screens/news_screen.dart';
-import '../../features/settings/presentation/screens/settings_screen.dart';
-import '../../features/symbols/presentation/screens/symbols_screen.dart';
+import '../../features/chart/views/chart_view.dart';
+import '../../features/news/views/news_view.dart';
+import '../../features/settings/views/settings_view.dart';
+import '../../features/symbols/views/symbols_view.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../providers/navigation_providers.dart';
 import '../widgets/offline_banner.dart';
@@ -25,10 +25,10 @@ class AppShell extends ConsumerWidget {
             child: IndexedStack(
               index: index,
               children: const [
-                SymbolsScreen(),
-                ChartScreen(),
-                NewsScreen(),
-                SettingsScreen(),
+                SymbolsView(),
+                ChartView(),
+                NewsView(),
+                SettingsView(),
               ],
             ),
           ),

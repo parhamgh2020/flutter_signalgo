@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'core/providers/auth_providers.dart';
 import 'core/providers/locale_controller.dart';
 import 'core/providers/theme_controller.dart';
 import 'core/router/app_shell.dart';
 import 'core/theme/app_theme.dart';
+import 'core/viewmodels/auth_view_model.dart';
 import 'l10n/generated/app_localizations.dart';
 
 class SignalGoApp extends ConsumerWidget {
@@ -18,7 +18,7 @@ class SignalGoApp extends ConsumerWidget {
 
     // Ensures an Appwrite session (anonymous, at minimum) exists as soon as
     // the app starts, independent of which screen the user opens first.
-    ref.watch(authControllerProvider);
+    ref.watch(authViewModelProvider);
 
     final isFarsi = locale.languageCode == 'fa';
     final light = isFarsi ? AppTheme.withFarsiFont(AppTheme.light()) : AppTheme.light();
