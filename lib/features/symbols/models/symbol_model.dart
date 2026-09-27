@@ -61,16 +61,24 @@ class SymbolModel {
       name: map['name'] as String,
       nameFa: map['name_fa'] as String?,
       iconUrl: map['icon_url'] as String?,
-      price: (map['price'] as num).toDouble(),
-      change24h: (map['change_24h'] as num).toDouble(),
-      change7d: (map['change_7d'] as num).toDouble(),
-      marketCap: (map['market_cap'] as num).toDouble(),
-      volume24h: (map['volume_24h'] as num).toDouble(),
-      rank: (map['rank'] as num).toInt(),
+      price: _toDouble(map['price']),
+      change24h: _toDouble(map['change_24h']),
+      change7d: _toDouble(map['change_7d']),
+      marketCap: _toDouble(map['market_cap']),
+      volume24h: _toDouble(map['volume_24h']),
+      rank: _toDouble(map['rank']).toInt(),
       updatedAt: DateTime.tryParse(map['updated_at'] as String? ?? '') ?? DateTime.now(),
-      sparkline: (map['sparkline'] as List<dynamic>?)?.map((e) => (e as num).toDouble()).toList() ?? const [],
+      sparkline: (map['sparkline'] as List<dynamic>?)?.map(_toDouble).toList() ?? const [],
     );
   }
+
+  /// Lenient numeric parsing: backend rows may have null or string-typed
+  /// numeric attributes, which shouldn't break the whole list.
+  static double _toDouble(Object? value) => switch (value) {
+        num v => v.toDouble(),
+        String v => double.tryParse(v) ?? 0,
+        _ => 0,
+      };
 
   Map<String, dynamic> toCacheMap() {
     return {

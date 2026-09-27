@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:appwrite/appwrite.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../../core/appwrite/appwrite_config.dart';
 import '../../../core/cache/offline_cache.dart';
@@ -37,7 +38,7 @@ class SymbolsRepositoryAppwrite implements SymbolsRepository {
   }) async {
     try {
       // Only Bitcoin is shown on the symbols page for now.
-      final queries = <String>[Query.limit(limit), Query.equal('symbol', 'BTC')];
+      final queries = <String>[Query.limit(limit)];
       if (cursor != null) queries.add(Query.cursorAfter(cursor));
       if (search != null && search.trim().isNotEmpty) {
         queries.add(Query.search('name', search.trim()));
@@ -54,7 +55,15 @@ class SymbolsRepositoryAppwrite implements SymbolsRepository {
         queries: queries,
       );
 
-      final items = res.documents.map((d) => SymbolModel.fromMap(d.data..[r'$id'] = d.$id)).toList();
+      final items = <SymbolModel>[];
+      for (final d in res.documents) {
+        try {
+          items.add(SymbolModel.fromMap(d.data..[r'$id'] = d.$id));
+        } catch (e) {
+          // Skip malformed rows instead of failing the whole list.
+          debugPrint('Skipping malformed symbol document ${d.$id}: $e');
+        }
+      }
 
       if (cursor == null) {
         await _cache.writeList(_cacheKey, items.map((e) => e.toCacheMap()).toList());
@@ -73,7 +82,8 @@ class SymbolsRepositoryAppwrite implements SymbolsRepository {
         }
       }
       return Err(Failure.fromAppwriteException(e));
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('fetchSymbols failed: $e\n$st');
       return Err(UnknownFailure(e));
     }
   }
