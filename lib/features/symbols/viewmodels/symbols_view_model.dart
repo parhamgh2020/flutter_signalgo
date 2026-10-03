@@ -6,6 +6,7 @@ import '../../../core/appwrite/appwrite_client.dart';
 import '../../../core/cache/offline_cache.dart';
 import '../../../core/providers/hive_provider.dart';
 import '../../../core/viewmodels/auth_view_model.dart';
+import '../../watchlist/viewmodels/watchlist_view_model.dart';
 import '../models/symbol_model.dart';
 import '../repositories/symbols_repository.dart';
 import '../repositories/symbols_repository_appwrite.dart';
@@ -42,7 +43,6 @@ class SymbolsListViewModel extends AsyncNotifier<List<SymbolModel>> {
     await ref.watch(authViewModelProvider.future);
 
     final sort = ref.watch(symbolSortProvider);
-    final search = ref.watch(symbolSearchQueryProvider);
     final repo = ref.watch(symbolsRepositoryProvider);
 
     ref.onDispose(() {
@@ -57,7 +57,7 @@ class SymbolsListViewModel extends AsyncNotifier<List<SymbolModel>> {
     _pollTimer?.cancel();
     _pollTimer = Timer.periodic(_pollInterval, (_) => _pollIfStale());
 
-    final result = await repo.fetchSymbols(sort: sort, search: search.isEmpty ? null : search);
+    final result = await repo.fetchSymbols(sort: sort);
     return result.fold(
       (page) {
         _nextCursor = page.nextCursor;
@@ -84,8 +84,7 @@ class SymbolsListViewModel extends AsyncNotifier<List<SymbolModel>> {
     if (DateTime.now().difference(_lastLiveEventAt) < _staleAfter) return;
     final repo = ref.read(symbolsRepositoryProvider);
     final sort = ref.read(symbolSortProvider);
-    final search = ref.read(symbolSearchQueryProvider);
-    final result = await repo.fetchSymbols(sort: sort, search: search.isEmpty ? null : search);
+    final result = await repo.fetchSymbols(sort: sort);
     result.fold((page) {
       _nextCursor = page.nextCursor;
       state = AsyncData(page.items);
@@ -99,12 +98,7 @@ class SymbolsListViewModel extends AsyncNotifier<List<SymbolModel>> {
 
     final repo = ref.read(symbolsRepositoryProvider);
     final sort = ref.read(symbolSortProvider);
-    final search = ref.read(symbolSearchQueryProvider);
-    final result = await repo.fetchSymbols(
-      sort: sort,
-      search: search.isEmpty ? null : search,
-      cursor: cursor,
-    );
+    final result = await repo.fetchSymbols(sort: sort, cursor: cursor);
     result.fold((page) {
       _nextCursor = page.nextCursor;
       state = AsyncData([...current, ...page.items]);
@@ -113,9 +107,46 @@ class SymbolsListViewModel extends AsyncNotifier<List<SymbolModel>> {
 
   Future<void> refresh() async {
     ref.invalidateSelf();
-    await future;
+    try {
+      await future;
+    } catch (_) {
+      // The failure is already exposed through `state` as AsyncError.
+    }
   }
 }
 
 final symbolsListViewModelProvider =
     AsyncNotifierProvider<SymbolsListViewModel, List<SymbolModel>>(SymbolsListViewModel.new);
+
+/// The symbols list as shown on the symbols page: search, sort and the
+/// favorites filter are applied locally on top of the fetched pages.
+///
+/// Search is local so it matches ticker, English and Persian names without
+/// depending on a backend fulltext index, and so typing doesn't refetch and
+/// re-subscribe to realtime on every keystroke. Sorting is re-applied
+/// locally so order stays correct after live price updates and when the
+/// list comes from the offline cache.
+final visibleSymbolsProvider = Provider<AsyncValue<List<SymbolModel>>>((ref) {
+  final symbolsAsync = ref.watch(symbolsListViewModelProvider);
+  final query = ref.watch(symbolSearchQueryProvider).trim().toLowerCase();
+  final sort = ref.watch(symbolSortProvider);
+  final favoritesOnly = ref.watch(favoritesOnlyProvider);
+  final watchlist = ref.watch(watchlistStreamProvider).valueOrNull ?? const <String>{};
+
+  return symbolsAsync.whenData((items) {
+    var visible = items.where((s) {
+      if (favoritesOnly && !watchlist.contains(s.id)) return false;
+      if (query.isEmpty) return true;
+      return s.symbol.toLowerCase().contains(query) ||
+          s.name.toLowerCase().contains(query) ||
+          (s.nameFa?.contains(query) ?? false);
+    }).toList();
+
+    visible.sort(switch (sort) {
+      SymbolSort.marketCap => (a, b) => b.marketCap.compareTo(a.marketCap),
+      SymbolSort.gainers => (a, b) => b.change24h.compareTo(a.change24h),
+      SymbolSort.losers => (a, b) => a.change24h.compareTo(b.change24h),
+    });
+    return visible;
+  });
+});

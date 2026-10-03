@@ -36,7 +36,7 @@ class SymbolListTile extends ConsumerWidget {
       onTap: onTap,
       leading: CircleAvatar(
         radius: 18,
-        child: Text(symbol.symbol.substring(0, 1)),
+        child: Text(symbol.symbol.isEmpty ? '?' : symbol.symbol.substring(0, 1)),
       ),
       title: Text(symbol.symbol, style: const TextStyle(fontWeight: FontWeight.w600)),
       subtitle: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -51,7 +51,7 @@ class SymbolListTile extends ConsumerWidget {
             children: [
               Text(priceText, style: const TextStyle(fontWeight: FontWeight.w600)),
               const SizedBox(height: 2),
-              ChangeBadge(percent: symbol.change24h, compact: true),
+              ChangeBadge(percent: symbol.change24h, compact: true, persianDigits: persianDigits),
             ],
           ),
           IconButton(

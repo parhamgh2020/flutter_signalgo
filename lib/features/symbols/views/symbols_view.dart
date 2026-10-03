@@ -44,7 +44,8 @@ class _SymbolsViewState extends ConsumerState<SymbolsView> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final symbolsAsync = ref.watch(symbolsListViewModelProvider);
+    final symbolsAsync = ref.watch(visibleSymbolsProvider);
+    final isSearching = ref.watch(symbolSearchQueryProvider).trim().isNotEmpty;
     final watchlist = ref.watch(watchlistStreamProvider).valueOrNull ?? const <String>{};
     final favoritesOnly = ref.watch(favoritesOnlyProvider);
     final sort = ref.watch(symbolSortProvider);
@@ -109,19 +110,22 @@ class _SymbolsViewState extends ConsumerState<SymbolsView> {
                 retryLabel: l10n.retry,
                 onRetry: () => ref.read(symbolsListViewModelProvider.notifier).refresh(),
               ),
-              data: (items) {
-                final visible = favoritesOnly ? items.where((s) => watchlist.contains(s.id)).toList() : items;
+              data: (visible) {
                 if (visible.isEmpty) {
+                  final showWatchlistHint = favoritesOnly && !isSearching;
                   return EmptyState(
-                    icon: favoritesOnly ? Icons.star_border_rounded : Icons.search_off_rounded,
-                    title: favoritesOnly ? l10n.emptyWatchlist : l10n.emptySymbols,
-                    subtitle: favoritesOnly ? l10n.emptyWatchlistHint : null,
+                    icon: showWatchlistHint ? Icons.star_border_rounded : Icons.search_off_rounded,
+                    title: showWatchlistHint ? l10n.emptyWatchlist : l10n.emptySymbols,
+                    subtitle: showWatchlistHint ? l10n.emptyWatchlistHint : null,
                   );
                 }
                 return RefreshIndicator(
                   onRefresh: () => ref.read(symbolsListViewModelProvider.notifier).refresh(),
                   child: ListView.builder(
                     controller: _scrollController,
+                    // Keep pull-to-refresh working when the list is shorter
+                    // than the screen.
+                    physics: const AlwaysScrollableScrollPhysics(),
                     itemCount: visible.length,
                     itemBuilder: (context, index) {
                       final item = visible[index];
