@@ -34,10 +34,7 @@ class SymbolListTile extends ConsumerWidget {
 
     return ListTile(
       onTap: onTap,
-      leading: CircleAvatar(
-        radius: 18,
-        child: Text(symbol.symbol.isEmpty ? '?' : symbol.symbol.substring(0, 1)),
-      ),
+      leading: _SymbolIcon(symbol: symbol),
       title: Text(symbol.symbol, style: const TextStyle(fontWeight: FontWeight.w600)),
       subtitle: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
       trailing: Row(
@@ -60,6 +57,36 @@ class SymbolListTile extends ConsumerWidget {
             onPressed: onToggleWatch,
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SymbolIcon extends StatelessWidget {
+  const _SymbolIcon({required this.symbol});
+
+  static const double _radius = 18;
+
+  final SymbolModel symbol;
+
+  @override
+  Widget build(BuildContext context) {
+    final fallback = CircleAvatar(
+      radius: _radius,
+      child: Text(symbol.symbol.isEmpty ? '?' : symbol.symbol.substring(0, 1)),
+    );
+
+    final url = symbol.iconUrl;
+    if (url == null || url.isEmpty) return fallback;
+
+    return ClipOval(
+      child: Image.network(
+        url,
+        width: _radius * 2,
+        height: _radius * 2,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) => fallback,
+        loadingBuilder: (_, child, progress) => progress == null ? child : fallback,
       ),
     );
   }
