@@ -134,6 +134,7 @@ class _SymbolsViewState extends ConsumerState<SymbolsView> {
                         symbol: item,
                         isWatched: isWatched,
                         onTap: () {
+                          debugPrint('[Symbols] tapped ${item.symbol} (id=${item.id}, price=${item.price}) -> opening chart');
                           ref.read(selectedSymbolProvider.notifier).state = item.id;
                           ref.read(selectedTabIndexProvider.notifier).state = 1;
                         },

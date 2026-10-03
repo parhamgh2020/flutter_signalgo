@@ -21,7 +21,9 @@ class CandleModel {
   bool get isBullish => close >= open;
 
   factory CandleModel.fromMap(Map<String, dynamic> map) {
-    final ts = map['timestamp'];
+    // Appwrite candle documents store the bar start as `open_time` (epoch
+    // ms, see data_provider); `timestamp` is kept for older/mock payloads.
+    final ts = map['open_time'] ?? map['timestamp'];
     return CandleModel(
       timestamp: ts is String ? DateTime.parse(ts) : DateTime.fromMillisecondsSinceEpoch((ts as num).toInt()),
       open: (map['open'] as num).toDouble(),

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/appwrite/appwrite_client.dart';
@@ -42,11 +43,23 @@ class ChartCandlesViewModel extends FamilyAsyncNotifier<List<CandleModel>, Chart
     unawaited(_liveSub?.cancel());
     _liveSub = repo.watchLiveCandle(symbol: arg.symbol, timeframe: arg.timeframe).listen(_applyLive);
 
+    debugPrint('[Chart] loading candles for ${arg.symbol} ${arg.timeframe.apiValue} (${repo.runtimeType})');
     final result = await repo.fetchCandles(symbol: arg.symbol, timeframe: arg.timeframe);
-    return result.fold((v) => v, (f) => throw f);
+    return result.fold(
+      (v) {
+        debugPrint('[Chart] got ${v.length} candles for ${arg.symbol} ${arg.timeframe.apiValue}'
+            '${v.isEmpty ? '' : ': ${v.first.timestamp} .. ${v.last.timestamp}, last close=${v.last.close}'}');
+        return v;
+      },
+      (f) {
+        debugPrint('[Chart] candles failed for ${arg.symbol} ${arg.timeframe.apiValue}: $f');
+        throw f;
+      },
+    );
   }
 
   void _applyLive(CandleModel updated) {
+    debugPrint('[Chart] live candle ${arg.symbol}: ${updated.timestamp} close=${updated.close}');
     final current = state.valueOrNull;
     if (current == null || current.isEmpty) return;
     final next = List<CandleModel>.from(current);
@@ -66,8 +79,21 @@ final chartCandlesViewModelProvider =
 
 final latestAnalysisProvider = FutureProvider.autoDispose.family<AnalysisModel?, ChartKey>((ref, arg) async {
   final repo = ref.watch(chartRepositoryProvider);
+  debugPrint('[Chart] loading analysis for ${arg.symbol} ${arg.timeframe.apiValue}');
   final result = await repo.fetchLatestAnalysis(symbol: arg.symbol, timeframe: arg.timeframe);
-  return result.fold((v) => v, (f) => throw f);
+  return result.fold(
+    (v) {
+      debugPrint(v == null
+          ? '[Chart] no analysis for ${arg.symbol} ${arg.timeframe.apiValue}'
+          : '[Chart] analysis ${arg.symbol}: trend=${v.trend.name}, signal=${v.signal.name}, '
+              'confidence=${v.confidence}, createdAt=${v.createdAt}');
+      return v;
+    },
+    (f) {
+      debugPrint('[Chart] analysis failed for ${arg.symbol} ${arg.timeframe.apiValue}: $f');
+      throw f;
+    },
+  );
 });
 
 /// Derived presentation state: the MA overlay series for the current candle

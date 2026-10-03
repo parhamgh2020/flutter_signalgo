@@ -39,6 +39,8 @@ class ChartView extends ConsumerWidget {
         }
       }
     }
+    debugPrint('[Chart] build: selectedId=$selectedSymbol -> ticker=$selectedTicker, '
+        'timeframe=${timeframe.apiValue}, symbolsLoaded=${symbolsItems?.length}');
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.chartTitle)),
