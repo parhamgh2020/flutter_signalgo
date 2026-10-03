@@ -89,11 +89,16 @@ class ChartRepositoryAppwrite implements ChartRepository {
     controller = StreamController<CandleModel>.broadcast(
       onListen: () {
         subscription = _realtime.subscribe([channel]);
-        subscription!.stream.listen((RealtimeMessage message) {
-          try {
-            controller.add(CandleModel.fromMap(message.payload));
-          } catch (_) {}
-        });
+        subscription!.stream.listen(
+          (RealtimeMessage message) {
+            try {
+              controller.add(CandleModel.fromMap(message.payload));
+            } catch (_) {}
+          },
+          // Realtime errors (e.g. a rejected subscription) would otherwise
+          // surface as unhandled exceptions; the SDK reconnects on its own.
+          onError: (_) {},
+        );
       },
       onCancel: () => subscription?.close(),
     );

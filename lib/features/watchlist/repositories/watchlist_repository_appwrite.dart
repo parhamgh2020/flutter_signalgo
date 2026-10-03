@@ -109,17 +109,22 @@ class WatchlistRepositoryAppwrite implements WatchlistRepository {
       }, (_) {});
 
       subscription = _realtime.subscribe([channel]);
-      subscription!.stream.listen((RealtimeMessage message) {
-        final symbol = message.payload['symbol'] as String?;
-        if (symbol == null) return;
-        final isDelete = message.events.any((e) => e.contains('.delete'));
-        if (isDelete) {
-          current.remove(symbol);
-        } else {
-          current.add(symbol);
-        }
-        controller.add(Set.of(current));
-      });
+      subscription!.stream.listen(
+        (RealtimeMessage message) {
+          final symbol = message.payload['symbol'] as String?;
+          if (symbol == null) return;
+          final isDelete = message.events.any((e) => e.contains('.delete'));
+          if (isDelete) {
+            current.remove(symbol);
+          } else {
+            current.add(symbol);
+          }
+          controller.add(Set.of(current));
+        },
+        // Realtime errors (e.g. a rejected subscription) would otherwise
+        // surface as unhandled exceptions; the SDK reconnects on its own.
+        onError: (_) {},
+      );
     }
 
     controller = StreamController<Set<String>>.broadcast(
